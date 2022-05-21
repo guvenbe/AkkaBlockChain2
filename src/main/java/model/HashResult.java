@@ -1,5 +1,7 @@
 package model;
 
+import java.util.Objects;
+
 public class HashResult {
 
 	private int nonce;
@@ -25,5 +27,17 @@ public class HashResult {
 		this.nonce = nonce;
 		this.complete = true;
 	}
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof HashResult)) return false;
+		HashResult that = (HashResult) o;
+		return getNonce() == that.getNonce() && isComplete() == that.isComplete() && Objects.equals(getHash(), that.getHash());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(getNonce(), getHash(), isComplete());
+	}
 }
