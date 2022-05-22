@@ -2,6 +2,7 @@ package blockchain;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -12,7 +13,7 @@ import model.HashResult;
 import java.io.Serializable;
 import java.util.Objects;
 
-public class ManagerBehavoir extends AbstractBehavior<ManagerBehavoir.Command> {
+public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
 
     public interface Command extends Serializable {
     }
@@ -67,17 +68,20 @@ public class ManagerBehavoir extends AbstractBehavior<ManagerBehavoir.Command> {
             return Objects.hash(getHashResult());
         }
     }
-    private ManagerBehavoir(ActorContext<Command> context) {
+    private ManagerBehavior(ActorContext<Command> context) {
         super(context);
     }
 
     public static Behavior<Command> create() {
-        return Behaviors.setup(ManagerBehavoir::new);
+        return Behaviors.setup(ManagerBehavior::new);
     }
 
     @Override
     public Receive createReceive() {
         return newReceiveBuilder()
+                .onSignal(Terminated.class, handler ->{ //for the watch we need to handle the termination message
+                    return Behaviors.same();
+                })
                 .onMessage(MineBlockCommand.class, message -> {
                     this.sender=message.getSender();
                     this.block=message.getBlock();
@@ -97,6 +101,7 @@ public class ManagerBehavoir extends AbstractBehavior<ManagerBehavoir.Command> {
 
     private void startNextWorker() {
         ActorRef<WorkerBehavior.Command> worker = getContext().spawn(WorkerBehavior.create(), "worker" + currentNonce);
+        getContext().watch(worker); //supervsion for each worker
         worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficulty, getContext().getSelf()));
         currentNonce++;
     }

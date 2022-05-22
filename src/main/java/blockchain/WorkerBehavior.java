@@ -17,13 +17,13 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 		private int startNonce;
 		private int difficulty;
 
-		private ActorRef<ManagerBehavoir.Command> controller;
+		private ActorRef<ManagerBehavior.Command> controller;
 
-		public Command(ActorRef<ManagerBehavoir.Command> controller) {
+		public Command(ActorRef<ManagerBehavior.Command> controller) {
 			this.controller = controller;
 		}
 
-		public Command(Block block, int startNonce, int difficulty, ActorRef<ManagerBehavoir.Command> controller) {
+		public Command(Block block, int startNonce, int difficulty, ActorRef<ManagerBehavior.Command> controller) {
 			this.block = block;
 			this.startNonce = startNonce;
 			this.difficulty = difficulty;
@@ -40,7 +40,7 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 		public int getDifficulty() {
 			return difficulty;
 		}
-		public ActorRef<ManagerBehavoir.Command> getController() {
+		public ActorRef<ManagerBehavior.Command> getController() {
 			return controller;
 		}
 	}
@@ -70,12 +70,12 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 					if (hash.substring(0,message.getDifficulty()).equals(target)) {
 						HashResult hashResult = new HashResult();
 						hashResult.foundAHash(hash, nonce);
-						message.getController().tell(new ManagerBehavoir.HasHResultCommand(hashResult));
+						message.getController().tell(new ManagerBehavior.HasHResultCommand(hashResult));
 						getContext().getLog().debug(hashResult.getNonce() + " : " +hashResult.getHash());
 						return Behaviors.same();
 					} else {
 						getContext().getLog().debug("null");
-						return Behaviors.same();
+						return Behaviors.stopped();
 					}
 				})
 				.build();

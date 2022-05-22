@@ -1,7 +1,7 @@
 import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import akka.actor.testkit.typed.javadsl.TestInbox;
-import blockchain.ManagerBehavoir;
+import blockchain.ManagerBehavior;
 import blockchain.WorkerBehavior;
 import model.Block;
 import model.HashResult;
@@ -18,7 +18,7 @@ public class MiningTests {
     void testEMiningFailsIfNonceNotInRange() {
         BehaviorTestKit<WorkerBehavior.Command> testActor = BehaviorTestKit.create(WorkerBehavior.create());
         Block block = BlocksData.getNextBlock(0, "0");
-        TestInbox<ManagerBehavoir.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
+        TestInbox<ManagerBehavior.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
         WorkerBehavior.Command message = new WorkerBehavior.Command(block, 0, 5, testInbox.getRef());
         testActor.run(message);
         List<CapturedLogEvent> logMessages = testActor.getAllLogEntries();
@@ -32,7 +32,7 @@ public class MiningTests {
     void testEMiningPassesIfNonceIsInRange() {
         BehaviorTestKit<WorkerBehavior.Command> testActor = BehaviorTestKit.create(WorkerBehavior.create());
         Block block = BlocksData.getNextBlock(0, "0");
-        TestInbox<ManagerBehavoir.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
+        TestInbox<ManagerBehavior.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
         WorkerBehavior.Command message = new WorkerBehavior.Command(block, 2244000, 5, testInbox.getRef());
         testActor.run(message);
         List<CapturedLogEvent> logMessages = testActor.getAllLogEntries();
@@ -47,14 +47,14 @@ public class MiningTests {
     void testMessageIsReceivedIfNonceIsInRange(){
         BehaviorTestKit<WorkerBehavior.Command> testActor = BehaviorTestKit.create(WorkerBehavior.create());
         Block block = BlocksData.getNextBlock(0, "0");
-        TestInbox<ManagerBehavoir.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
+        TestInbox<ManagerBehavior.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
         WorkerBehavior.Command message = new WorkerBehavior.Command(block, 2244000, 5, testInbox.getRef());
         testActor.run(message);
 
         HashResult expectedHashResult = new HashResult();
         expectedHashResult.foundAHash("00000af3145ae7ecacaea33935550052600d3904c94de67b1d3e07dcf7d1027b",2244662);
         List<CapturedLogEvent> logMessages = testActor.getAllLogEntries();
-        ManagerBehavoir.Command expectedCommand = new ManagerBehavoir.HasHResultCommand(expectedHashResult);
+        ManagerBehavior.Command expectedCommand = new ManagerBehavior.HasHResultCommand(expectedHashResult);
         testInbox.expectMessage(expectedCommand); //has result must have equal() method
     }
 
@@ -62,7 +62,7 @@ public class MiningTests {
     void testNoMessageIsReceivedIfNonceIsNotInRange(){
         BehaviorTestKit<WorkerBehavior.Command> testActor = BehaviorTestKit.create(WorkerBehavior.create());
         Block block = BlocksData.getNextBlock(0, "0");
-        TestInbox<ManagerBehavoir.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
+        TestInbox<ManagerBehavior.Command> testInbox = TestInbox.create(); //Stub of a actor thaqt can receive messages
         WorkerBehavior.Command message = new WorkerBehavior.Command(block, 0, 5, testInbox.getRef());
         testActor.run(message);
         assertFalse(testInbox.hasMessages());

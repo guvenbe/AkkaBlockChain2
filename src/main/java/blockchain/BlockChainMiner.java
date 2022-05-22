@@ -4,7 +4,7 @@ import java.util.concurrent.CompletionStage;
 
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
-import blockchain.ManagerBehavior;
+
 import model.Block;
 import model.BlockChain;
 import model.BlockValidationException;
@@ -24,7 +24,7 @@ public class BlockChainMiner {
 			String lastHash = nextBlockId > 0 ? blocks.getLastHash() : "0";
 			Block block = BlocksData.getNextBlock(nextBlockId, lastHash);
 			CompletionStage<HashResult> results = AskPattern.ask(actorSystem,
-					me -> new ManagerBehavior.MineBlockCommand(block, 5, me), 
+					me -> new ManagerBehavior.MineBlockCommand(block, me, 5),
 					Duration.ofSeconds(30),
 					actorSystem.scheduler());
 				
