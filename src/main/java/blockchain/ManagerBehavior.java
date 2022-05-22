@@ -89,9 +89,19 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     this.sender=message.getSender();
                     this.block=message.getBlock();
                     this.difficulty= message.getDifficulty();
+                    this.currentlyMining =true;
+
                     for (int i = 0; i < 10; i++) {
                         startNextWorker();
                     }
+                    return Behaviors.same();
+                })
+                .onMessage(HasHResultCommand.class, message->{
+                    for (ActorRef<Void> child : getContext().getChildren()) {
+                        getContext().stop(child);
+                    }
+                    this.currentlyMining=false;
+                    sender.tell(message.getHashResult());
                     return Behaviors.same();
                 })
                 .build();
@@ -101,15 +111,18 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     private Block block;
     private int difficulty;
     private int currentNonce = 0;
+    private boolean currentlyMining;
 
     private void startNextWorker() {
-        System.out.println("About to start mining with nonces starting at " + currentNonce * 1000);
-        Behavior<WorkerBehavior.Command> workerBehavior =
-                Behaviors.supervise(WorkerBehavior.create()).onFailure(SupervisorStrategy.resume() );
+        if (currentlyMining) {
+            System.out.println("About to start mining with nonces starting at " + currentNonce * 1000);
+            Behavior<WorkerBehavior.Command> workerBehavior =
+                    Behaviors.supervise(WorkerBehavior.create()).onFailure(SupervisorStrategy.resume());
 
-        ActorRef<WorkerBehavior.Command> worker = getContext().spawn(workerBehavior, "worker" + currentNonce);
-        getContext().watch(worker); //supervsion for each worker
-        worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficulty, getContext().getSelf()));
-        currentNonce++;
+            ActorRef<WorkerBehavior.Command> worker = getContext().spawn(workerBehavior, "worker" + currentNonce);
+            getContext().watch(worker); //supervsion for each worker
+            worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficulty, getContext().getSelf()));
+            currentNonce++;
+        }
     }
 }
