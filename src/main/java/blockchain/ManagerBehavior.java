@@ -2,6 +2,7 @@ package blockchain;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.Terminated;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -80,6 +81,8 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     public Receive createReceive() {
         return newReceiveBuilder()
                 .onSignal(Terminated.class, handler ->{ //for the watch we need to handle the termination message
+                                                        //AVOIDS DEATH PACT exception
+                    startNextWorker();
                     return Behaviors.same();
                 })
                 .onMessage(MineBlockCommand.class, message -> {
@@ -100,7 +103,11 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     private int currentNonce = 0;
 
     private void startNextWorker() {
-        ActorRef<WorkerBehavior.Command> worker = getContext().spawn(WorkerBehavior.create(), "worker" + currentNonce);
+        System.out.println("About to start mining with nonces starting at " + currentNonce * 1000);
+        Behavior<WorkerBehavior.Command> workerBehavior =
+                Behaviors.supervise(WorkerBehavior.create()).onFailure(SupervisorStrategy.resume() );
+
+        ActorRef<WorkerBehavior.Command> worker = getContext().spawn(workerBehavior, "worker" + currentNonce);
         getContext().watch(worker); //supervsion for each worker
         worker.tell(new WorkerBehavior.Command(block, currentNonce * 1000, difficulty, getContext().getSelf()));
         currentNonce++;

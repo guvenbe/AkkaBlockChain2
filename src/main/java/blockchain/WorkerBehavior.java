@@ -10,6 +10,8 @@ import model.Block;
 import model.HashResult;
 import utils.BlockChainUtils;
 
+import java.util.Random;
+
 public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 	
 	public static class Command {
@@ -75,6 +77,10 @@ public class WorkerBehavior extends AbstractBehavior<WorkerBehavior.Command> {
 						return Behaviors.same();
 					} else {
 						getContext().getLog().debug("null");
+//						Random r = new Random();
+//						if (r.nextInt(10) == 3) {
+//							throw new ArithmeticException("no hash found");
+//						}
 						return Behaviors.stopped();
 					}
 				})
