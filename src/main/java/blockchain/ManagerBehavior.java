@@ -78,13 +78,13 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
     }
 
     @Override
-    public Receive createReceive() {
+    public Receive<Command> createReceive(){
+        return idleMessageHandler();
+    }
+
+    public Receive<Command> idleMessageHandler() {
         return newReceiveBuilder()
-                .onSignal(Terminated.class, handler ->{ //for the watch we need to handle the termination message
-                                                        //AVOIDS DEATH PACT exception
-                    startNextWorker();
-                    return Behaviors.same();
-                })
+
                 .onMessage(MineBlockCommand.class, message -> {
                     this.sender=message.getSender();
                     this.block=message.getBlock();
@@ -94,6 +94,17 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     for (int i = 0; i < 10; i++) {
                         startNextWorker();
                     }
+                    return activeMessageHandler();
+                })
+
+                .build();
+    }
+
+    public Receive<Command> activeMessageHandler(){
+        return newReceiveBuilder()
+                .onSignal(Terminated.class, handler ->{ //for the watch we need to handle the termination message
+                    //AVOIDS DEATH PACT exception
+                    startNextWorker();
                     return Behaviors.same();
                 })
                 .onMessage(HasHResultCommand.class, message->{
@@ -102,7 +113,7 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     }
                     this.currentlyMining=false;
                     sender.tell(message.getHashResult());
-                    return Behaviors.same();
+                    return idleMessageHandler();
                 })
                 .build();
     }
@@ -115,7 +126,7 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
 
     private void startNextWorker() {
         if (currentlyMining) {
-            System.out.println("About to start mining with nonces starting at " + currentNonce * 1000);
+            //System.out.println("About to start mining with nonces starting at " + currentNonce * 1000);
             Behavior<WorkerBehavior.Command> workerBehavior =
                     Behaviors.supervise(WorkerBehavior.create()).onFailure(SupervisorStrategy.resume());
 
