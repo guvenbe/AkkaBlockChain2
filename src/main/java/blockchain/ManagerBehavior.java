@@ -84,7 +84,9 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
 
     public Receive<Command> idleMessageHandler() {
         return newReceiveBuilder()
-
+                .onSignal(Terminated.class, handle ->{
+                    return Behaviors.same();
+                })
                 .onMessage(MineBlockCommand.class, message -> {
                     this.sender=message.getSender();
                     this.block=message.getBlock();
@@ -114,6 +116,11 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     this.currentlyMining=false;
                     sender.tell(message.getHashResult());
                     return idleMessageHandler();
+                })
+                .onMessage(MineBlockCommand.class,message->{
+                    System.out.println("Delaying a mining request");
+                    getContext().getSelf().tell(message);
+                    return Behaviors.same();
                 })
                 .build();
     }
