@@ -4,10 +4,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.Terminated;
-import akka.actor.typed.javadsl.AbstractBehavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
-import akka.actor.typed.javadsl.Receive;
+import akka.actor.typed.javadsl.*;
 import model.Block;
 import model.HashResult;
 
@@ -15,6 +12,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
+
+    private StashBuffer<Command> stashBuffer;
 
     public interface Command extends Serializable {
     }
@@ -69,12 +68,19 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
             return Objects.hash(getHashResult());
         }
     }
-    private ManagerBehavior(ActorContext<Command> context) {
+    private ManagerBehavior(ActorContext<Command> context, StashBuffer<Command> stashBuffer) {
         super(context);
+        this.stashBuffer=stashBuffer;
     }
 
     public static Behavior<Command> create() {
-        return Behaviors.setup(ManagerBehavior::new);
+        //create behavior with message buffer of 10
+        return Behaviors.withStash(10,
+                stash -> {
+                    return Behaviors.setup(context -> {
+                        return new ManagerBehavior(context, stash);
+                    });
+                });
     }
 
     @Override
@@ -92,7 +98,6 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     this.block=message.getBlock();
                     this.difficulty= message.getDifficulty();
                     this.currentlyMining =true;
-
                     for (int i = 0; i < 10; i++) {
                         startNextWorker();
                     }
@@ -115,11 +120,14 @@ public class ManagerBehavior extends AbstractBehavior<ManagerBehavior.Command> {
                     }
                     this.currentlyMining=false;
                     sender.tell(message.getHashResult());
-                    return idleMessageHandler();
+                    return stashBuffer.unstashAll(idleMessageHandler());
                 })
                 .onMessage(MineBlockCommand.class,message->{
                     System.out.println("Delaying a mining request");
-                    getContext().getSelf().tell(message);
+                    //getContext().getSelf().tell(message);
+                    if(!stashBuffer.isFull()) {
+                        stashBuffer.stash(message);
+                    }
                     return Behaviors.same();
                 })
                 .build();

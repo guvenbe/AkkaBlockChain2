@@ -71,7 +71,7 @@ public class BlockChainMiner {
 	}
 	public void mineBlocks() {
 		
-		actorSystem = ActorSystem.create(ManagerBehavior.create(), "BlockChainMiner");
+		actorSystem = ActorSystem.create(MiningSystemBehavior.create(), "BlockChainMiner");
 		mineNextBlock();
 		mineAnIndependentBlock();
 	}
